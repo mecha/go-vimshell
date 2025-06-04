@@ -7,12 +7,9 @@ import (
 )
 
 type StatusBar struct {
-	Left         []StatusBarSection
-	Right        []StatusBarSection
-	ErrStyleFunc StyleFunc
-	CmdPrefix    string
-	Message      string
-	Error        error
+	Left  []StatusBarSection
+	Right []StatusBarSection
+	Style t.Style
 }
 
 type StatusBarSection func(s *Shell, scrn t.Screen, style t.Style) (string, t.Style)
@@ -20,27 +17,9 @@ type StatusBarSection func(s *Shell, scrn t.Screen, style t.Style) (string, t.St
 // Creates a new empty status bar.
 func NewStatusBar() *StatusBar {
 	return &StatusBar{
-		Left:         make([]StatusBarSection, 0),
-		Right:        make([]StatusBarSection, 0),
-		ErrStyleFunc: InheritStyle,
-		CmdPrefix:    "",
+		Left:  make([]StatusBarSection, 0),
+		Right: make([]StatusBarSection, 0),
 	}
-}
-
-// Creates a default vim-like status bar, with colon ":" as the command prefix,
-// a bold ANSI bright red style for error mesages, and a single left section
-// that shows the current mode.
-func NewDefaultStatusBar() *StatusBar {
-	sb := NewStatusBar()
-	sb.SetCommandPrefix(":")
-	sb.SetErrorStyle(func(style t.Style) t.Style {
-		return style.Bold(true).Foreground(t.ColorRed)
-	})
-	sb.AddLeftSection(func(s *Shell, scrn t.Screen, style t.Style) (string, t.Style) {
-		modeStatus := " " + strings.ToUpper(s.Mode) + " "
-		return modeStatus, s.CurrMode().StatusStyle(style)
-	})
-	return sb
 }
 
 // Adds left sections to the status bar.
@@ -53,54 +32,35 @@ func (sb *StatusBar) AddRightSection(sections ...StatusBarSection) {
 	sb.Right = append(sb.Right, sections...)
 }
 
-// Sets the prefix for command input text. This should typically match the rune
-// of the key that switches the shell to command mode.
-func (sb *StatusBar) SetCommandPrefix(prefix string) {
-	sb.CmdPrefix = prefix
-}
-
-// Sets the prefix for command input text. This should typically match the rune
-// of the key that switches the shell to command mode.
-func (sb *StatusBar) SetErrorStyle(styleFunc StyleFunc) {
-	sb.ErrStyleFunc = styleFunc
-}
-
 // Renders the status bar on a screen with a given style.
-func (sb *StatusBar) Render(shell *Shell, scrn t.Screen, style t.Style) {
-	width, height := scrn.Size()
+func (sb *StatusBar) Render(shell *Shell, scrn t.Screen, y int) {
+	width, _ := scrn.Size()
 
 	xl := 0
 	for _, section := range sb.Left {
-		sectionText, sectionStyle := section(shell, scrn, style)
-		writeString(scrn, xl, height-2, sectionText, nil, sectionStyle)
+		sectionText, sectionStyle := section(shell, scrn, sb.Style)
+		writeString(scrn, xl, y, sectionText, nil, sectionStyle)
 		xl += len(sectionText)
 	}
 
 	xr := width
 	for _, section := range sb.Right {
-		sectionText, sectionStyle := section(shell, scrn, style)
-		writeString(scrn, xr, height-2, sectionText, nil, sectionStyle)
+		sectionText, sectionStyle := section(shell, scrn, sb.Style)
+		writeString(scrn, xr, y, sectionText, nil, sectionStyle)
 		xr -= len(sectionText)
 	}
 
 	for x := xl; x < xr; x++ {
-		scrn.SetContent(x, height-2, ' ', nil, style)
-		scrn.SetContent(x, height-1, ' ', nil, style)
+		scrn.SetContent(x, y, ' ', nil, sb.Style)
 	}
+}
 
-	switch {
-	case shell.Mode == "command":
-		text := sb.CmdPrefix + shell.CmdMode.Text
-		writeString(scrn, 0, height-1, text, nil, style)
-
-		cursorX := shell.CmdMode.Cursor + len(sb.CmdPrefix)
-		scrn.ShowCursor(cursorX, height-1)
-
-	case sb.Error != nil:
-		errStyle := sb.ErrStyleFunc(style)
-		writeString(scrn, 0, height-1, sb.Error.Error(), nil, errStyle)
-
-	default:
-		writeString(scrn, 0, height-1, sb.Message, nil, style)
+func NewModeSection(styles map[string]StyleFunc) StatusBarSection {
+	return func(s *Shell, scrn t.Screen, style t.Style) (string, t.Style) {
+		modeStatus := strings.ToUpper(s.Mode)
+		if styleFunc, has := styles[s.Mode]; has {
+			style = styleFunc(style)
+		}
+		return modeStatus, style
 	}
 }

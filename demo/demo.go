@@ -24,14 +24,17 @@ func main() {
 	}
 
 	shell := v.NewDefaultShell(quit)
-	shell.StatusBar.Message = "Hello! Type :q to exit :)"
-	shell.AddCommand("q", func(args []string) (string, error) {
+	shell.Message = "Hello! Type :q to exit :)"
+	shell.CommandLine.AddCommand("q", func(args []string) (string, error) {
 		quit()
 		return "", nil
 	})
 
 	shell.Run(scrn, func() {
-		shell.RenderStatusBar(scrn, t.StyleDefault.Background(t.ColorBlack))
+		_, height := scrn.Size()
+		shell.StatusBar.Render(shell, scrn, height-2)
+		shell.CommandLine.Render(shell, scrn, height-1)
+
 		if shell.Mode != "command" {
 			scrn.HideCursor()
 		}

@@ -7,11 +7,13 @@ import (
 )
 
 type Shell struct {
-	Mode      string
-	Modes     map[string]Mode
-	CmdMode   *CommandMode
-	StatusBar *StatusBar
-	Commands  map[string]CommandFunc
+	Mode        string
+	Modes       map[string]Mode
+	CmdMode     *CommandMode
+	StatusBar   *StatusBar
+	CommandLine *CommandLine
+	Message     string
+	Error       error
 }
 
 type Mode interface {
@@ -27,11 +29,11 @@ type KeyHandlerFunc func(shell *Shell, ev *t.EventKey)
 func NewShell(defMode Mode) *Shell {
 	defModeName := defMode.Name()
 	shell := &Shell{
-		Mode:      defModeName,
-		Modes:     map[string]Mode{defModeName: defMode},
-		CmdMode:   NewCommandMode(defModeName),
-		Commands:  map[string]CommandFunc{},
-		StatusBar: NewDefaultStatusBar(),
+		Mode:        defModeName,
+		Modes:       map[string]Mode{defModeName: defMode},
+		CmdMode:     NewCommandMode(defModeName),
+		CommandLine: NewCmdLine(),
+		StatusBar:   NewStatusBar(),
 	}
 	shell.AddMode(shell.CmdMode)
 	return shell
@@ -47,7 +49,8 @@ func NewDefaultShell(quitFn func()) *Shell {
 		}
 	}
 	shell := NewShell(nrmMode)
-	shell.StatusBar = NewDefaultStatusBar()
+	shell.StatusBar = NewStatusBar()
+	shell.StatusBar.AddLeftSection(NewModeSection(map[string]StyleFunc{}))
 	return shell
 }
 
@@ -71,29 +74,7 @@ func (s *Shell) AddMode(mode Mode) {
 	s.Modes[mode.Name()] = mode
 }
 
-// Adds a command to the shell.
-// The name of the command must be unique. If a command already exists with the
-// given name, the existing command will be replaced.
-func (s *Shell) AddCommand(name string, fn CommandFunc) {
-	s.Commands[name] = fn
-}
-
-// Runs a command with the given arguments.
-// The outcome is stored in the status bar in the form of output text or an error.
-func (s *Shell) RunCommand(command string, args []string) {
-	if cmd, has := s.Commands[command]; has {
-		s.StatusBar.Message, s.StatusBar.Error = cmd(args)
-	} else {
-		s.StatusBar.Message, s.StatusBar.Error = "", errors.New("unknown command: "+command)
-	}
-}
-
 // Handles a key input event using the shell's current mode.
 func (s *Shell) HandleKey(ev *t.EventKey) {
 	s.CurrMode().HandleKey(s, ev)
-}
-
-// Renders the status bar
-func (s *Shell) RenderStatusBar(scrn t.Screen, style t.Style) {
-	s.StatusBar.Render(s, scrn, style)
 }
