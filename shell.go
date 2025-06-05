@@ -48,6 +48,7 @@ func NewDefaultShell(quitFn func()) *Shell {
 		}
 	}
 	shell := NewShell(nrmMode)
+	shell.CommandLine.Prefix = ":"
 	shell.StatusBar = NewStatusBar()
 	shell.StatusBar.AddLeftSection(NewModeSection(map[string]StyleFunc{}))
 	return shell
