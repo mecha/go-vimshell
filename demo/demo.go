@@ -5,7 +5,7 @@ import (
 	"os"
 
 	t "github.com/gdamore/tcell/v2"
-	v "github.com/mecha/vimshell"
+	v "github.com/mecha/go-vimshell"
 )
 
 func main() {

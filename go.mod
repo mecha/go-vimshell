@@ -1,4 +1,4 @@
-module github.com/mecha/vimshell
+module github.com/mecha/go-vimshell
 
 go 1.24.3
 
