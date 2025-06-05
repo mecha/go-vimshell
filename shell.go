@@ -77,3 +77,24 @@ func (s *Shell) AddMode(mode Mode) {
 func (s *Shell) HandleKey(ev *t.EventKey) {
 	s.CurrMode().HandleKey(s, ev)
 }
+
+// Runs a typical program loop that draws to a screen and processes input.
+func (shell *Shell) Run(scrn t.Screen, draw func()) {
+	for {
+		scrn.Clear()
+		draw()
+		scrn.Show()
+
+		ev := scrn.PollEvent()
+		if ev == nil {
+			return
+		}
+
+		switch ev := ev.(type) {
+		case *t.EventResize:
+			scrn.Sync()
+		case *t.EventKey:
+			shell.HandleKey(ev)
+		}
+	}
+}
