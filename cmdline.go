@@ -60,7 +60,7 @@ func (cl *CommandLine) Feed(rune rune) {
 	if cursor == len(cl.Text) {
 		cl.Text += string(rune)
 	} else {
-		cl.Text += cl.Text[0:cursor] + string(rune) + cl.Text[cursor:]
+		cl.Text = cl.Text[0:cursor] + string(rune) + cl.Text[cursor:]
 	}
 	cl.Cursor++
 	cl.historySearch = cl.Text
@@ -112,6 +112,7 @@ func (cl *CommandLine) Parse() (string, []string) {
 func (cl *CommandLine) Submit(shell *Shell) {
 	cmd, args := cl.Parse()
 	if cmd != "" {
+		cl.History = append(cl.History, cl.Text)
 		cl.GetCommand(cmd, args)(shell)
 	}
 	cl.Reset()
@@ -126,9 +127,10 @@ func (cl *CommandLine) Reset() {
 
 func (cl *CommandLine) HistoryOlder() {
 	for i := cl.historyIdx - 1; i >= 0; i-- {
-		if strings.HasPrefix(cl.History[i], cl.historySearch) {
+		if len(cl.historySearch) == 0 || strings.HasPrefix(cl.History[i], cl.historySearch) {
 			cl.historyIdx = 1
 			cl.Text = cl.History[i]
+			cl.Cursor = len(cl.Text)
 			return
 		}
 	}
@@ -136,13 +138,15 @@ func (cl *CommandLine) HistoryOlder() {
 
 func (cl *CommandLine) HistoryNewer() {
 	for i := cl.historyIdx + 1; i < len(cl.History); i++ {
-		if strings.HasPrefix(cl.History[i], cl.historySearch) {
+		if len(cl.historySearch) == 0 ||strings.HasPrefix(cl.History[i], cl.historySearch) {
 			cl.historyIdx = i
 			cl.Text = cl.History[i]
+			cl.Cursor = len(cl.Text)
 			return
 		}
 	}
 	cl.Text = cl.historySearch
+	cl.Cursor = len(cl.Text)
 	cl.historyIdx = len(cl.History)
 }
 
