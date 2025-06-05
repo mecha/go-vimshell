@@ -18,10 +18,6 @@ func (mode *ConfigurableMode) Name() string {
 	return mode.name
 }
 
-func (mode *ConfigurableMode) StatusStyle(style t.Style) t.Style {
-	return style.Background(t.ColorGreen).Foreground(t.ColorBlack).Bold(true)
-}
-
 func (n *ConfigurableMode) MapKey(key t.Key, fn KeyHandlerFunc) {
 	n.Keymap[key] = fn
 }

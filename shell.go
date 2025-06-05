@@ -18,7 +18,6 @@ type Shell struct {
 
 type Mode interface {
 	Name() string
-	StatusStyle(style t.Style) t.Style
 	HandleKey(shell *Shell, ev *t.EventKey)
 }
 

@@ -20,10 +20,6 @@ func (c *CommandMode) Name() string {
 	return CmdModeName
 }
 
-func (c *CommandMode) StatusStyle(style t.Style) t.Style {
-	return style.Foreground(t.ColorBlack).Background(t.ColorYellow).Bold(true)
-}
-
 func (mode *CommandMode) HandleKey(shell *Shell, ev *t.EventKey) {
 	key, rune := ev.Key(), ev.Rune()
 
